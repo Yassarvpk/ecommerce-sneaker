@@ -1,2 +1,6 @@
+# Combined .gitignore
 node_modules/
 .env
+/uploads/*
+.DS_Store
+*.log
