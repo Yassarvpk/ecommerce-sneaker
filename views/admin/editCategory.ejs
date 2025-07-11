@@ -1,0 +1,20 @@
+<%- include("../partials/adminHeader") %>
+
+<div class="container mt-4">
+  <h2 class="mb-4 text-center">Edit Category</h2>
+
+  <% if (error) { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+
+  <form method="POST" action="/admin/categories/edit/<%= category._id %>">
+    <div class="mb-3">
+      <label for="name" class="form-label">Category Name</label>
+      <input type="text" name="name" class="form-control" value="<%= category.name %>" required>
+    </div>
+    <button class="btn btn-success">Update</button>
+    <a href="/admin/categories" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+
+<%- include("../partials/adminFooter") %>

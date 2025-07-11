@@ -1,0 +1,29 @@
+<h1>Add New Product</h1>
+
+<form action="/admin/products/add" method="POST" enctype="multipart/form-data">
+  <label>Name:</label>
+  <input type="text" name="name" required /><br />
+
+  <label>Description:</label>
+  <textarea name="description"></textarea><br />
+
+  <label>Price:</label>
+  <input type="number" name="price" step="0.01" required /><br />
+
+  <label>Stock:</label>
+  <input type="number" name="stock" required /><br />
+
+  <label>Category:</label>
+  <select name="category" required>
+    <% categories.forEach(cat => { %>
+      <option value="<%= cat._id %>"><%= cat.name %></option>
+    <% }) %>
+  </select><br />
+
+  <label>Images (min 3):</label>
+  <input type="file" name="images" multiple accept="image/*" required /><br />
+
+  <button type="submit">Add Product</button>
+</form>
+
+<a href="/admin/products">← Back to Products</a>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Users</title>
+</head>
+<body>
+  <h2>User Management</h2>
+
+  <!-- 🔍 Search Form -->
+  <form method="GET" action="/admin/users">
+    <input
+      type="text"
+      name="search"
+      value="<%= search %>"
+      placeholder="Search by name or email"
+    />
+    <button type="submit">Search</button>
+    <% if (search && search.length > 0) { %>
+      <a href="/admin/users">Reset</a>
+    <% } %>
+  </form>
+
+  <!-- User Table -->
+  <table border="1">
+    <tr>
+      <th>#</th>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+    <% users.forEach((user, index) => { %>
+      <tr>
+        <td><%= index + 1 + (currentPage - 1) * 5 %></td>
+        <td><%= user.name %></td>
+        <td><%= user.email %></td>
+        <td><%= user.isBlocked ? "Blocked" : "Active" %></td>
+        <td>
+          <form action="/admin/users/block/<%= user._id %>?page=<%= currentPage %>" method="POST">
+            <button type="submit" onclick="return confirm(`<%= user.isBlocked ? 'Unblock' : 'Block' %> this user?`)">
+              <%= user.isBlocked ? 'Unblock' : 'Block' %>
+            </button>
+          </form>
+        </td>
+      </tr>
+    <% }) %>
+  </table>
+
+  <!-- Pagination -->
+  <div>
+    <% for (let i = 1; i <= totalPages; i++) { %>
+      <% if (i === currentPage) { %>
+        <strong><%= i %></strong>
+      <% } else { %>
+        <a href="/admin/users?page=<%= i %><% if (search) { %>&search=<%= search %><% } %>"><%= i %></a>
+      <% } %>
+    <% } %>
+  </div>
+</body>
+</html>

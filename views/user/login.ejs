@@ -1,0 +1,14 @@
+<h2>Login</h2>
+<form action="/login" method="POST">
+  <input type="email" name="email" placeholder="Enter email" required />
+  <input type="password" name="password" placeholder="Enter password" required />
+  <button type="submit">Login</button>
+</form>
+
+<% if (error) { %>
+  <p style="color: red"><%= error %></p>
+<% } %>
+
+<p>Don't have an account? <a href="/signup">Sign up</a></p>
+
+
