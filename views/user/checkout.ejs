@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout - SneakerSpace</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <%- include("../partials/userHeader") %>
+
+  <div class="container mt-5">
+    <h2 class="text-center mb-4">Checkout</h2>
+    <% if (message) { %>
+      <div class="alert <%= message.includes('Error') ? 'alert-danger' : 'alert-success' %>" role="alert">
+        <%= message %>
+      </div>
+    <% } %>
+
+    <div class="row">
+      <div class="col-md-6">
+        <h4>Shipping Address</h4>
+        <form action="/checkout" method="POST">
+          <div class="mb-3">
+            <label for="address" class="form-label">Address</label>
+            <input
+              type="text"
+              name="address"
+              id="address"
+              class="form-control"
+              value="<%= user.address || '' %>"
+              required
+              aria-label="Shipping address"
+            >
+          </div>
+          <div class="mb-3">
+            <label for="city" class="form-label">City</label>
+            <input
+              type="text"
+              name="city"
+              id="city"
+              class="form-control"
+              value="<%= user.city || '' %>"
+              required
+              aria-label="City"
+            >
+          </div>
+          <div class="mb-3">
+            <label for="postalCode" class="form-label">Postal Code</label>
+            <input
+              type="text"
+              name="postalCode"
+              id="postalCode"
+              class="form-control"
+              value="<%= user.postalCode || '' %>"
+              required
+              aria-label="Postal code"
+            >
+          </div>
+          <div class="mb-3">
+            <label for="paymentMethod" class="form-label">Payment Method</label>
+            <select name="paymentMethod" id="paymentMethod" class="form-select" required aria-label="Payment method">
+              <option value="cod" <%= paymentMethod === 'cod' ? 'selected' : '' %>>Cash on Delivery</option>
+              <option value="card" <%= paymentMethod === 'card' ? 'selected' : '' %>>Credit/Debit Card</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary" aria-label="Place order">Place Order</button>
+        </form>
+      </div>
+      <div class="col-md-6">
+        <h4>Order Summary</h4>
+        <% if (cart && cart.length > 0) { %>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% cart.forEach(item => { %>
+                <tr>
+                  <td><%= item.productId.name %></td>
+                  <td>₹<%= item.productId.price.toFixed(2) %></td>
+                  <td><%= item.quantity %></td>
+                  <td>₹<%= (item.productId.price * item.quantity).toFixed(2) %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+          <h4>Total: ₹<%= cart.reduce((sum, item) => sum + item.productId.price * item.quantity, 0).toFixed(2) %></h4>
+        <% } else { %>
+          <p>Your cart is empty</p>
+          <a href="/dashboard" class="btn btn-primary">Continue Shopping</a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <%- include("../partials/userFooter") %>
+</body>
+</html>

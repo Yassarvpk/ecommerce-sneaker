@@ -1,4 +1,4 @@
-module.exports = (req, res, next) => {
+const isAdmin = (req, res, next) => {
   console.log("🔒 adminAuth middleware hit");
   console.log("Session data:", req.session);
 
@@ -10,3 +10,5 @@ module.exports = (req, res, next) => {
     res.redirect("/admin");
   }
 };
+
+module.exports = { isAdmin };

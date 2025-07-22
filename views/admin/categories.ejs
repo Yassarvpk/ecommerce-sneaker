@@ -1,32 +1,36 @@
 <%- include("../partials/adminHeader") %>
+<%- include("../partials/adminSidebar") %>
 
 <div class="container mt-4">
-  <h2 class="mb-4 text-center">Manage Categories</h2>
+  <h2 class="text-center mb-4">Category Management</h2>
 
   <!-- Flash messages -->
-  <% if (error) { %>
-    <div class="alert alert-danger"><%= error %></div>
-  <% } %>
-  <% if (success) { %>
-    <div class="alert alert-success"><%= success %></div>
+  <% if (message) { %>
+    <div class="alert <%= message.includes('Error') ? 'alert-danger' : 'alert-success' %>" role="alert">
+      <%= message %>
+    </div>
   <% } %>
 
   <!-- Search -->
-  <form class="mb-3 d-flex" method="GET" action="/admin/categories">
-    <input type="text" name="search" class="form-control me-2" value="<%= search %>" placeholder="Search categories...">
+  <form class="mb-3 d-flex justify-content-center" method="GET" action="/admin/categories">
+    <input
+      type="text"
+      name="search"
+      class="form-control w-25 me-2"
+      value="<%= search %>"
+      placeholder="Search categories..."
+      aria-label="Search categories by name"
+    >
     <button class="btn btn-outline-primary me-2">Search</button>
     <a href="/admin/categories" class="btn btn-outline-secondary">Clear</a>
   </form>
 
-  <!-- Add Category -->
-  <form method="POST" action="/admin/categories" class="mb-4 d-flex">
-    <input type="text" name="name" class="form-control me-2" placeholder="New category name" required>
-    <button class="btn btn-success">Add</button>
-  </form>
+  <!-- Add Category Link -->
+  <a href="/admin/categories/add" class="btn btn-success mb-4">Add New Category</a>
 
   <!-- Category Table -->
   <table class="table table-bordered text-center">
-    <thead>
+    <thead class="thead-dark">
       <tr>
         <th>#</th>
         <th>Name</th>
@@ -40,11 +44,22 @@
           <tr>
             <td><%= (currentPage - 1) * 5 + index + 1 %></td>
             <td><%= cat.name %></td>
-            <td><%= cat.createdAt.toDateString() %></td>
+            <td><%= cat.createdAt ? cat.createdAt.toDateString() : 'N/A' %></td>
             <td>
-              <a href="/admin/categories/edit/<%= cat._id %>" class="btn btn-sm btn-primary">Edit</a>
-              <a href="/admin/categories/delete/<%= cat._id %>" class="btn btn-sm btn-danger"
-                 onclick="return confirm('Are you sure to delete <%= cat.name %>?')">Delete</a>
+              <a href="/admin/categories/edit/<%= cat._id %>" class="btn btn-sm btn-primary me-2">Edit</a>
+              <form
+                action="/admin/categories/delete/<%= cat._id %>?page=<%= currentPage %>&search=<%= encodeURIComponent(search) %>"
+                method="POST"
+                style="display:inline;"
+              >
+                <button
+                  type="submit"
+                  class="btn btn-sm btn-danger"
+                  onclick="return confirm('Are you sure you want to delete <%= cat.name %>?')"
+                >
+                  Delete
+                </button>
+              </form>
             </td>
           </tr>
         <% }) %>
@@ -55,11 +70,21 @@
   </table>
 
   <!-- Pagination -->
-  <nav aria-label="Page navigation">
+  <nav aria-label="Category pagination">
     <ul class="pagination justify-content-center">
+      <% if (currentPage > 1) { %>
+        <li class="page-item">
+          <a class="page-link" href="/admin/categories?page=<%= currentPage - 1 %>&search=<%= encodeURIComponent(search) %>">Previous</a>
+        </li>
+      <% } %>
       <% for (let i = 1; i <= totalPages; i++) { %>
         <li class="page-item <%= i === currentPage ? 'active' : '' %>">
-          <a class="page-link" href="/admin/categories?page=<%= i %>&search=<%= search %>"><%= i %></a>
+          <a class="page-link" href="/admin/categories?page=<%= i %>&search=<%= encodeURIComponent(search) %>"><%= i %></a>
+        </li>
+      <% } %>
+      <% if (currentPage < totalPages) { %>
+        <li class="page-item">
+          <a class="page-link" href="/admin/categories?page=<%= currentPage + 1 %>&search=<%= encodeURIComponent(search) %>">Next</a>
         </li>
       <% } %>
     </ul>

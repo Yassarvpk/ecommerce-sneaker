@@ -1,0 +1,29 @@
+<%- include("../partials/adminHeader") %>
+<%- include("../partials/adminSidebar") %>
+
+<div class="container mt-4">
+  <h2 class="text-center mb-4">Add Category</h2>
+
+  <% if (message) { %>
+    <div class="alert <%= message.includes('Error') ? 'alert-danger' : 'alert-success' %>" role="alert">
+      <%= message %>
+    </div>
+  <% } %>
+
+  <form method="POST" action="/admin/categories/add" class="d-flex justify-content-center">
+    <div class="w-50">
+      <input
+        type="text"
+        name="name"
+        class="form-control"
+        placeholder="Category name"
+        required
+        aria-label="Category name"
+      >
+      <button type="submit" class="btn btn-success mt-2">Add Category</button>
+      <a href="/admin/categories" class="btn btn-secondary mt-2">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<%- include("../partials/adminFooter") %>

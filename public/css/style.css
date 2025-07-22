@@ -1,0 +1,21 @@
+/* public/css/style.css */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+th {
+  background-color: #f2f2f2;
+}
+button {
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.pagination a, .pagination strong {
+  margin: 0 5px;
+  text-decoration: none;
+}

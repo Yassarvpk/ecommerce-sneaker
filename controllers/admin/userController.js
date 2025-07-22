@@ -1,66 +1,50 @@
-const { toASCII } = require("punycode");
-const User = require("../../models/userModels");
+const User = require('../../models/userModel');
 
-const listUsers = async (req, res) => {
-  console.log("🔥 /admin/users route hit");
-
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = 5;
-    const skip = (page - 1) * limit;
-
-    const search = req.query.search || "";
-    const searchRegex = new RegExp(search, "i");
-
-    const filter = {
-      $or: [
-        { name: { $regex: searchRegex } },
-        { email: { $regex: searchRegex } },
-      ],
-    };
-
-    const totalUsers = await User.countDocuments(filter);
-    const totalPages = Math.ceil(totalUsers / limit);
-
-    const users = await User.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    console.log("Users Found:", users.length);
-
-    res.render("admin/users", {
-      users,
-      currentPage: page,
-      totalPages,
-      search,
-    });
-  } catch (err) {
-    console.error("❌ Error in listUsers:", err);
-    res.status(500).send("Internal Server Error");
-  }
-};
-
-const toggleBlock = async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const user = await User.findById(userId);
-    if(!user) {
-      return res.status(404).send("User not found");
+  const listUsers = async (req, res) => {
+    try {
+      const searchQuery = req.query.userSearch || '';
+      const page = parseInt(req.query.userPage) || 1;
+      const limit = 10;
+      let query = { isDeleted: false };
+      if (searchQuery) {
+        query.$or = [
+          { fullName: { $regex: searchQuery, $options: 'i' } },
+          { email: { $regex: searchQuery, $options: 'i' } }
+        ];
+      }
+      const totalUsers = await User.countDocuments(query);
+      const users = await User.find(query)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+      console.log(`Fetched ${users.length} users for page ${page}, search: "${searchQuery}"`);
+      const totalPages = Math.ceil(totalUsers / limit);
+      const currentPage = Math.min(Math.max(page, 1), totalPages || 1);
+      return { users, userSearch: searchQuery, currentUserPage: currentPage, totalUserPages: totalPages };
+    } catch (err) {
+      console.error('❌ Error listing users:', err.message);
+      throw err;
     }
+  };
 
-    user.isBlocked = !user.isBlocked;
-    await user.save();
+  const toggleBlock = async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const user = await User.findById(userId);
+      if (!user) {
+        req.session.message = 'User not found';
+        return res.redirect('/admin/dashboard?tab=users');
+      }
+      user.isBlocked = !user.isBlocked;
+      await user.save();
+      console.log(`User ${userId} ${user.isBlocked ? 'blocked' : 'unblocked'}`);
+      req.session.message = `User ${user.isBlocked ? 'blocked' : 'unblocked'} successfully`;
+      res.redirect('/admin/dashboard?tab=users');
+    } catch (err) {
+      console.error('❌ Error toggling block:', err.message);
+      req.session.message = 'Error toggling user block status';
+      res.redirect('/admin/dashboard?tab=users');
+    }
+  };
 
-    const redirectPage = req.query.page ? `?page=${req.query.page}` : "";
-    res.redirect(`/admin/users${redirectPage}`);
-  } catch (err) {
-    console.error("Error toggling block:", err);
-    res.status(500).send("Internal Server Error");
-  }
-};
-
-module.exports = {
-  listUsers,
-  toggleBlock,
-};
+  module.exports = { listUsers, toggleBlock };

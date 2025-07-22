@@ -1,32 +1,43 @@
 <%- include("../partials/adminHeader") %>
-
-<h2 class="text-center my-4">All Products</h2>
+<%- include("../partials/adminSidebar") %>
 
 <div class="container">
+  <h2 class="text-center my-4">Product Management</h2>
+
+  <% if (message) { %>
+    <p class="alert <%= message.includes('Error') ? 'alert-danger' : 'alert-success' %>" role="alert">
+      <%= message %>
+    </p>
+  <% } %>
 
   <form method="GET" action="/admin/products" class="d-flex justify-content-center my-3">
-    <input type="text" name="search" class="form-control w-25" placeholder="Search by name" value="<%= searchQuery %>">
-      <button type="submit" class="btn btn-primary ms-2">Search</button>
+    <input
+      type="text"
+      name="search"
+      class="form-control w-25"
+      placeholder="Search by name"
+      value="<%= searchQuery %>"
+      aria-label="Search products by name"
+    >
+    <button type="submit" class="btn btn-primary ms-2">Search</button>
     <a href="/admin/products" class="btn btn-secondary ms-2">Clear</a>
 
-    <select name="category" class="form-select w-auto ms-2" onchange="this.form.submit()">
+    <select name="category" class="form-select w-auto ms-2" onchange="this.form.submit()" aria-label="Filter by category">
       <option value="">All Categories</option>
       <% categories.forEach(cat => { %>
-      <option value="<%= cat._id %>" <%= categoryFilter === String(cat._id) ? 'selected' : '' %>>
-      <%= cat.name %>
-      </option>
+        <option value="<%= cat._id %>" <%= categoryFilter === String(cat._id) ? 'selected' : '' %>>
+          <%= cat.name %>
+        </option>
       <% }) %>
     </select>
 
-
-    <select name="sort" class="form-select w-auto ms-2" onchange="this.form.submit()">
-    <option value="latest" <%= sortBy === 'latest' ? 'selected' : '' %>>Latest</option>
-    <option value="price-asc" <%= sortBy === 'price-asc' ? 'selected' : '' %>>Price: Low to High</option>
-    <option value="price-desc" <%= sortBy === 'price-desc' ? 'selected' : '' %>>Price: High to Low</option>
-    <option value="name-asc" <%= sortBy === 'name-asc' ? 'selected' : '' %>>Name: A-Z</option>
-    <option value="name-desc" <%= sortBy === 'name-desc' ? 'selected' : '' %>>Name: Z-A</option>
+    <select name="sort" class="form-select w-auto ms-2" onchange="this.form.submit()" aria-label="Sort products">
+      <option value="latest" <%= sortBy === 'latest' ? 'selected' : '' %>>Latest</option>
+      <option value="price-asc" <%= sortBy === 'price-asc' ? 'selected' : '' %>>Price: Low to High</option>
+      <option value="price-desc" <%= sortBy === 'price-desc' ? 'selected' : '' %>>Price: High to Low</option>
+      <option value="name-asc" <%= sortBy === 'name-asc' ? 'selected' : '' %>>Name: A-Z</option>
+      <option value="name-desc" <%= sortBy === 'name-desc' ? 'selected' : '' %>>Name: Z-A</option>
     </select>
-
   </form>
 
   <table class="table table-bordered text-center">
@@ -46,55 +57,58 @@
       <% if (products.length > 0) { %>
         <% products.forEach((product, index) => { %>
           <tr>
-            <td><%= index + 1 %></td>
+            <td><%= index + 1 + (currentPage - 1) * 5 %></td>
             <td><%= product.name %></td>
             <td>
               <% product.images.forEach(img => { %>
-                <img src="<%= img %>" width="50" height="50" class="img-thumbnail" />
+                <img src="<%= img %>" width="50" height="50" class="img-thumbnail" alt="Product image" />
               <% }) %>
             </td>
-            <td><%= product.category?.name || "No Category" %></td>
-            <td>₹<%= product.price %></td>
+            <td><%= product.category ? product.category.name : 'No Category' %></td>
+            <td>₹<%= product.price.toFixed(2) %></td>
             <td><%= product.stock %></td>
-            <td><%= product.createdAt?.toDateString() %></td>
+            <td><%= product.createdAt ? product.createdAt.toDateString() : 'N/A' %></td>
             <td>
-              <a href="/admin/products/delete/<%= product._id %>" class="btn btn-danger btn-sm"
-                onclick="return confirm('Are you sure you want to delete this product?')">
-                Delete
-              </a>
-
               <a href="/admin/products/edit/<%= product._id %>" class="btn btn-warning btn-sm me-2">Edit</a>
-
+              <form action="/admin/products/delete/<%= product._id %>?page=<%= currentPage %>&search=<%= encodeURIComponent(searchQuery) %>&sort=<%= sortBy %>&category=<%= encodeURIComponent(categoryFilter) %>" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this product?')">
+                  Delete
+                </button>
+              </form>
             </td>
-
-            </tr>
-
+          </tr>
         <% }) %>
       <% } else { %>
         <tr>
-          <td colspan="7">No products found</td>
+          <td colspan="8">No products found</td>
         </tr>
       <% } %>
     </tbody>
   </table>
-</div>
 
-<div class="d-flex justify-content-center mt-4">
-  <nav>
-    <ul class="pagination">
-      <% for (let i = 1; i <= totalPages; i++) { %>
-        <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-          <a class="page-link" href="/admin/products?page=<%= i %>
-            <%= searchQuery ? `&search=${searchQuery}` : '' %>
-            <%= sortBy ? `&sort=${sortBy}` : '' %>
-            <%= categoryFilter ? `&category=${categoryFilter}` : '' %>">
-            <%= i %>
-          </a>
-        </li>
-      <% } %>
-    </ul>
-  </nav>
+  <div class="d-flex justify-content-center mt-4">
+    <nav aria-label="Product pagination">
+      <ul class="pagination">
+        <% if (currentPage > 1) { %>
+          <li class="page-item">
+            <a class="page-link" href="/admin/products?page=<%= currentPage - 1 %>&search=<%= encodeURIComponent(searchQuery) %>&sort=<%= sortBy %>&category=<%= encodeURIComponent(categoryFilter) %>">Previous</a>
+          </li>
+        <% } %>
+        <% for (let i = 1; i <= totalPages; i++) { %>
+          <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+            <a class="page-link" href="/admin/products?page=<%= i %>&search=<%= encodeURIComponent(searchQuery) %>&sort=<%= sortBy %>&category=<%= encodeURIComponent(categoryFilter) %>">
+              <%= i %>
+            </a>
+          </li>
+        <% } %>
+        <% if (currentPage < totalPages) { %>
+          <li class="page-item">
+            <a class="page-link" href="/admin/products?page=<%= currentPage + 1 %>&search=<%= encodeURIComponent(searchQuery) %>&sort=<%= sortBy %>&category=<%= encodeURIComponent(categoryFilter) %>">Next</a>
+          </li>
+        <% } %>
+      </ul>
+    </nav>
+  </div>
 </div>
-
 
 <%- include("../partials/adminFooter") %>

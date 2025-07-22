@@ -1,14 +1,14 @@
-const Category = require("../../models/categoryModel");
-const { search } = require("../../routes/adminRoutes");
+// controllers/admin/categoryController.js
+const Category = require('../../models/categoryModel');
 
+// List categories with search, pagination, and sorting
 const categoryList = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = 5;
     const skip = (page - 1) * limit;
-
-    const search = req.query.search || "";
-    const regex = new RegExp(search, "i");
+    const search = req.query.search || '';
+    const regex = new RegExp(search, 'i');
 
     const filter = {
       isDeleted: false,
@@ -19,118 +19,130 @@ const categoryList = async (req, res) => {
     const totalPages = Math.ceil(total / limit);
 
     const categories = await Category.find(filter)
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-    res.render("admin/categories", {
+    res.render('admin/categories', {
       categories,
       currentPage: page,
       totalPages,
       search,
-      error: null,
-      success: null,
+      message: req.session.message || null,
     });
+    delete req.session.message;
   } catch (err) {
-    console.error("Error loading categories:", err);
-    res.status(500).send("Internal Server Error");
+    console.error('Error loading categories:', err.message);
+    req.session.message = 'Internal Server Error';
+    res.redirect('/admin/categories');
   }
 };
 
+// Add category
 const addCategory = async (req, res) => {
   try {
-    const name = req.body.name.trim();
+    const name = req.body.name?.trim();
+    if (!name || name.length < 2) {
+      req.session.message = 'Category name must be at least 2 characters';
+      return res.redirect('/admin/categories/add');
+    }
 
-    const existing = await Category.findOne({ name: { $regex: new RegExp("^" + name + "$", "i") } });
+    const existing = await Category.findOne({
+      name: { $regex: new RegExp('^' + name + '$', 'i') },
+    });
 
     if (existing && !existing.isDeleted) {
-      // category already exists
-      return res.render("admin/categories", {
-        categories: [],
-        currentPage: 1,
-        totalPages: 1,
-        search: "",
-        error: "Category already exists.",
-        success: null,
-      });
+      req.session.message = 'Category already exists';
+      return res.redirect('/admin/categories/add');
     }
 
     if (existing && existing.isDeleted) {
-      // Reactivate soft deleted category
       existing.isDeleted = false;
-      existing.save();
-      return res.redirect("/admin/categories");
+      await existing.save();
+      req.session.message = 'Category reactivated successfully';
+      return res.redirect(`/admin/categories?page=${req.query.page || 1}&search=${encodeURIComponent(req.query.search || '')}`);
     }
 
     const newCategory = new Category({ name });
     await newCategory.save();
-
-    res.redirect("/admin/categories");
+    req.session.message = 'Category added successfully';
+    res.redirect(`/admin/categories?page=${req.query.page || 1}&search=${encodeURIComponent(req.query.search || '')}`);
   } catch (err) {
-    console.error("Error adding category:", err);
-    res.status(500).send("Internal Server Error");
+    console.error('Error adding category:', err.message);
+    req.session.message = 'Error adding category';
+    res.redirect('/admin/categories/add');
   }
 };
 
+// Load edit category form
 const editCategoryForm = async (req, res) => {
   try {
-    const category = await Category.findById(req.params.id);
-
-    if(!category || category.isDeleted) {
-      return res.redirect("/admin/categories");
+    const category = await Category.findOne({ _id: req.params.id, isDeleted: false });
+    if (!category) {
+      req.session.message = 'Category not found';
+      return res.redirect('/admin/categories');
     }
 
-    res.render("admin/editCategory", {category, error: null});
+    res.render('admin/editCategory', { category, message: req.session.message || null });
+    delete req.session.message;
   } catch (err) {
-    console.error("Edit category error:", err);
-    res.status(500).send("Internal Server Error");
+    console.error('Edit category error:', err.message);
+    req.session.message = 'Internal Server Error';
+    res.redirect('/admin/categories');
   }
 };
 
+// Update category
 const updateCategory = async (req, res) => {
   try {
-    const name = req.body.name.trim();
+    const name = req.body.name?.trim();
     const { id } = req.params;
 
+    if (!name || name.length < 2) {
+      const category = await Category.findById(id);
+      req.session.message = 'Category name must be at least 2 characters';
+      return res.render('admin/editCategory', { category, message: req.session.message });
+    }
+
     const exists = await Category.findOne({
-      name: { $regex: new RegExp("^" + name + "$", "i")},
-      _id: {$ne: id},
+      name: { $regex: new RegExp('^' + name + '$', 'i') },
+      _id: { $ne: id },
       isDeleted: false,
     });
 
     if (exists) {
       const category = await Category.findById(id);
-      return res.render("admin/editCategory", { category, error: "Name already exists" });
+      req.session.message = 'Category name already exists';
+      return res.render('admin/editCategory', { category, message: req.session.message });
     }
 
     await Category.findByIdAndUpdate(id, { name });
-
-    res.redirect("/admin/categories");
+    req.session.message = 'Category updated successfully';
+    res.redirect(`/admin/categories?page=${req.query.page || 1}&search=${encodeURIComponent(req.query.search || '')}`);
   } catch (err) {
-    console.error("Update category error:", err);
-    res.status(500).send("Internal Server Error");
+    console.error('Update category error:', err.message);
+    req.session.message = 'Error updating category';
+    res.redirect(`/admin/categories/edit/${req.params.id}`);
   }
 };
 
+// Soft delete category
 const deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
+    const category = await Category.findOne({ _id: id, isDeleted: false });
+    if (!category) {
+      req.session.message = 'Category not found';
+      return res.redirect('/admin/categories');
+    }
+
     await Category.findByIdAndUpdate(id, { isDeleted: true });
-    res.redirect("/admin/categories");
+    req.session.message = 'Category deleted successfully';
+    res.redirect(`/admin/categories?page=${req.query.page || 1}&search=${encodeURIComponent(req.query.search || '')}`);
   } catch (err) {
-    console.error("❌ Error deleting category:", err.message);
-    res.status(500).send("Internal Server Error");
-  }
-};
-
-
-const loadCategories = async (req, res) => {
-  try {
-    const categories = await Category.find({ isDeleted: false}).sort({ createdAt: -1 });
-    res.render("admin/categoryList", {categories});
-  } catch (err) {
-    console.error("Error loading categories:", err.message);
-    res.status(500).send("Internal Server Error");
+    console.error('Error deleting category:', err.message);
+    req.session.message = 'Error deleting category';
+    res.redirect('/admin/categories');
   }
 };
 
@@ -140,5 +152,4 @@ module.exports = {
   editCategoryForm,
   updateCategory,
   deleteCategory,
-  loadCategories,
 };

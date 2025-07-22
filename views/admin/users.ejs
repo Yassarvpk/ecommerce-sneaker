@@ -1,61 +1,83 @@
+<!-- views/admin/users.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Users</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management</title>
+  <link rel="stylesheet" href="/css/style.css"> <!-- Assuming CSS file exists -->
 </head>
 <body>
-  <h2>User Management</h2>
+  <%- include('../partials/adminHeader') %>
+  <%- include('../partials/adminSidebar') %>
 
-  <!-- 🔍 Search Form -->
+  <h2>User Management</h2>
+  <% if (message) { %>
+    <p style="color: <%= message.includes('Error') ? 'red' : 'green' %>;"><%= message %></p>
+  <% } %>
+
+  <!-- Search Form -->
   <form method="GET" action="/admin/users">
     <input
       type="text"
       name="search"
       value="<%= search %>"
       placeholder="Search by name or email"
+      aria-label="Search users by name or email"
     />
     <button type="submit">Search</button>
     <% if (search && search.length > 0) { %>
-      <a href="/admin/users">Reset</a>
+      <a href="/admin/users"><button type="button">Reset</button></a>
     <% } %>
   </form>
 
   <!-- User Table -->
-  <table border="1">
-    <tr>
-      <th>#</th>
-      <th>Name</th>
-      <th>Email</th>
-      <th>Status</th>
-      <th>Action</th>
-    </tr>
-    <% users.forEach((user, index) => { %>
+  <table>
+    <thead>
       <tr>
-        <td><%= index + 1 + (currentPage - 1) * 5 %></td>
-        <td><%= user.name %></td>
-        <td><%= user.email %></td>
-        <td><%= user.isBlocked ? "Blocked" : "Active" %></td>
-        <td>
-          <form action="/admin/users/block/<%= user._id %>?page=<%= currentPage %>" method="POST">
-            <button type="submit" onclick="return confirm(`<%= user.isBlocked ? 'Unblock' : 'Block' %> this user?`)">
-              <%= user.isBlocked ? 'Unblock' : 'Block' %>
-            </button>
-          </form>
-        </td>
+        <th>#</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Action</th>
       </tr>
-    <% }) %>
+    </thead>
+    <tbody>
+      <% users.forEach((user, index) => { %>
+        <tr>
+          <td><%= index + 1 + (currentPage - 1) * 5 %></td>
+          <td><%= user.name %></td>
+          <td><%= user.email %></td>
+          <td><%= user.isBlocked ? 'Blocked' : 'Active' %></td>
+          <td>
+            <form action="/admin/users/toggleBlock/<%= user._id %>?page=<%= currentPage %>&search=<%= encodeURIComponent(search) %>" method="POST">
+              <button type="submit" onclick="return confirm(`Are you sure you want to <%= user.isBlocked ? 'unblock' : 'block' %> this user?`)">
+                <%= user.isBlocked ? 'Unblock' : 'Block' %>
+              </button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
   </table>
 
   <!-- Pagination -->
   <div>
+    <% if (currentPage > 1) { %>
+      <a href="/admin/users?page=<%= currentPage - 1 %>&search=<%= encodeURIComponent(search) %>">Previous</a>
+    <% } %>
     <% for (let i = 1; i <= totalPages; i++) { %>
       <% if (i === currentPage) { %>
         <strong><%= i %></strong>
       <% } else { %>
-        <a href="/admin/users?page=<%= i %><% if (search) { %>&search=<%= search %><% } %>"><%= i %></a>
+        <a href="/admin/users?page=<%= i %>&search=<%= encodeURIComponent(search) %>"><%= i %></a>
       <% } %>
     <% } %>
+    <% if (currentPage < totalPages) { %>
+      <a href="/admin/users?page=<%= currentPage + 1 %>&search=<%= encodeURIComponent(search) %>">Next</a>
+    <% } %>
   </div>
+
+  <%- include('../partials/adminFooter') %>
 </body>
 </html>

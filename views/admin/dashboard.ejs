@@ -1,2 +1,259 @@
-<h1>Welcome Admin</h1>
-<a href="/admin/logout">Logout</a>
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - SneakerSpace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container mt-5">
+      <h2 class="text-center mb-4">Admin Dashboard</h2>
+      <% if (message) { %>
+        <div class="alert <%= message.includes('Error') ? 'alert-danger' : 'alert-success' %>" role="alert">
+          <%= message %>
+        </div>
+      <% } %>
+
+      <ul class="nav nav-tabs mb-4" id="adminTabs">
+        <li class="nav-item">
+          <a class="nav-link <%= activeTab === 'users' ? 'active' : '' %>" href="#users" data-bs-toggle="tab">User Management</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link <%= activeTab === 'categories' ? 'active' : '' %>" href="#categories" data-bs-toggle="tab">Category Management</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link <%= activeTab === 'products' ? 'active' : '' %>" href="#products" data-bs-toggle="tab">Product Management</a>
+        </li>
+      </ul>
+
+      <div class="tab-content">
+        <!-- User Management -->
+        <div class="tab-pane fade <%= activeTab === 'users' ? 'show active' : '' %>" id="users">
+          <h3>User Management</h3>
+          <p>Debug: <%= adminData.users.length %> users found</p>
+          <form action="/admin/dashboard?tab=users" method="GET" class="d-flex mb-3">
+            <input type="hidden" name="tab" value="users">
+            <input
+              type="text"
+              name="userSearch"
+              class="form-control w-25 me-2"
+              placeholder="Search by name or email..."
+              value="<%= adminData.userSearch || '' %>"
+            >
+            <button type="submit" class="btn btn-primary me-2">Search</button>
+            <a href="/admin/dashboard?tab=users" class="btn btn-secondary">Clear</a>
+          </form>
+          <% if (adminData.users.length > 0) { %>
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% adminData.users.forEach(user => { %>
+                  <tr>
+                    <td><%= user.fullName %></td>
+                    <td><%= user.email %></td>
+                    <td><%= user.isBlocked ? 'Blocked' : 'Active' %></td>
+                    <td>
+                      <a
+                        href="/admin/dashboard/toggle-block/<%= user._id %>?tab=users"
+                        class="btn btn-<%= user.isBlocked ? 'success' : 'danger' %> btn-sm"
+                        onclick="return confirm(`Are you sure you want to <%= user.isBlocked ? 'unblock' : 'block' %> <%= user.fullName %>?`)"
+                        <%= user.isBlocked ? 'Unblock' : 'Block' %>
+                      </a>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+            <nav aria-label="User pagination" class="mt-4">
+              <ul class="pagination justify-content-center">
+                <% if (adminData.currentUserPage > 1) { %>
+                  <li class="page-item">
+                    <a class="page-link" href="/admin/dashboard?tab=users&userPage=<%= adminData.currentUserPage - 1 %>&userSearch=<%= encodeURIComponent(adminData.userSearch || '') %>">Previous</a>
+                  </li>
+                <% } %>
+                <% for (let i = 1; i <= adminData.totalUserPages; i++) { %>
+                  <li class="page-item <%= adminData.currentUserPage === i ? 'active' : '' %>">
+                    <a class="page-link" href="/admin/dashboard?tab=users&userPage=<%= i %>&userSearch=<%= encodeURIComponent(adminData.userSearch || '') %>"><%= i %></a>
+                  </li>
+                <% } %>
+                <% if (adminData.currentUserPage < adminData.totalUserPages) { %>
+                  <li class="page-item">
+                    <a class="page-link" href="/admin/dashboard?tab=users&userPage=<%= adminData.currentUserPage + 1 %>&userSearch=<%= encodeURIComponent(adminData.userSearch || '') %>">Next</a>
+                  </li>
+                <% } %>
+              </ul>
+            </nav>
+          <% } else { %>
+            <p>No users found</p>
+          <% } %>
+        </div>
+
+        <!-- Category Management -->
+        <div class="tab-pane fade <%= activeTab === 'categories' ? 'show active' : '' %>" id="categories">
+          <h3>Category Management</h3>
+          <form action="/admin/dashboard/add-category" method="POST" class="mb-3">
+            <input type="text" name="name" class="form-control w-25 d-inline-block" placeholder="New category name" required>
+            <button type="submit" class="btn btn-primary ms-2">Add Category</button>
+          </form>
+          <form action="/admin/dashboard?tab=categories" method="GET" class="d-flex mb-3">
+            <input type="hidden" name="tab" value="categories">
+            <input
+              type="text"
+              name="categorySearch"
+              class="form-control w-25 me-2"
+              placeholder="Search categories..."
+              value="<%= adminData.categorySearch || '' %>"
+            >
+            <button type="submit" class="btn btn-primary me-2">Search</button>
+            <a href="/admin/dashboard?tab=categories" class="btn btn-secondary">Clear</a>
+          </form>
+          <% if (adminData.categoriesAdmin.length > 0) { %>
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% adminData.categoriesAdmin.forEach(category => { %>
+                  <tr>
+                    <td><%= category.name %></td>
+                    <td>
+                      <a href="/admin/dashboard/edit-category/<%= category._id %>?tab=categories" class="btn btn-warning btn-sm">Edit</a>
+                      <a
+                        href="/admin/dashboard/delete-category/<%= category._id %>?tab=categories"
+                        class="btn btn-danger btn-sm"
+                        onclick="return confirm('Are you sure you want to delete <%= category.name %>?')"
+                      >
+                        Delete
+                      </a>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+            <nav aria-label="Category pagination" class="mt-4">
+              <ul class="pagination justify-content-center">
+                <% if (adminData.currentCategoryPage > 1) { %>
+                  <li class="page-item">
+                    <a class="page-link" href="/admin/dashboard?tab=categories&categoryPage=<%= adminData.currentCategoryPage - 1 %>&categorySearch=<%= encodeURIComponent(adminData.categorySearch || '') %>">Previous</a>
+                  </li>
+                <% } %>
+                <% for (let i = 1; i <= adminData.totalCategoryPages; i++) { %>
+                  <li class="page-item <%= adminData.currentCategoryPage === i ? 'active' : '' %>">
+                    <a class="page-link" href="/admin/dashboard?tab=categories&categoryPage=<%= i %>&categorySearch=<%= encodeURIComponent(adminData.categorySearch || '') %>"><%= i %></a>
+                  </li>
+                <% } %>
+                <% if (adminData.currentCategoryPage < adminData.totalCategoryPages) { %>
+                  <li class="page-item">
+                    <a class="page-link" href="/admin/dashboard?tab=categories&categoryPage=<%= adminData.currentCategoryPage + 1 %>&categorySearch=<%= encodeURIComponent(adminData.categorySearch || '') %>">Next</a>
+                  </li>
+                <% } %>
+              </ul>
+            </nav>
+          <% } else { %>
+            <p>No categories found</p>
+          <% } %>
+        </div>
+
+        <!-- Product Management -->
+        <div class="tab-pane fade <%= activeTab === 'products' ? 'show active' : '' %>" id="products">
+          <h3>Product Management</h3>
+          <a href="/admin/dashboard/add-product" class="btn btn-primary mb-3">Add Product</a>
+          <form action="/admin/dashboard?tab=products" method="GET" class="d-flex mb-3">
+            <input type="hidden" name="tab" value="products">
+            <input
+              type="text"
+              name="productSearch"
+              class="form-control w-25 me-2"
+              placeholder="Search products..."
+              value="<%= adminData.productSearch || '' %>"
+            >
+            <button type="submit" class="btn btn-primary me-2">Search</button>
+            <a href="/admin/dashboard?tab=products" class="btn btn-secondary">Clear</a>
+          </form>
+          <% if (adminData.productsAdmin.length > 0) { %>
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% adminData.productsAdmin.forEach(product => { %>
+                  <tr>
+                    <td><%= product.name %></td>
+                    <td><%= product.category.name %></td>
+                    <td>₹<%= product.price.toFixed(2) %></td>
+                    <td><%= product.stock %></td>
+                    <td>
+                      <a href="/admin/dashboard/edit-product/<%= product._id %>?tab=products" class="btn btn-warning btn-sm">Edit</a>
+                      <a
+                        href="/admin/dashboard/delete-product/<%= product._id %>?tab=products"
+                        class="btn btn-danger btn-sm"
+                        onclick="return confirm('Are you sure you want to delete <%= product.name %>?')"
+                      >
+                        Delete
+                      </a>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+            <nav aria-label="Product pagination" class="mt-4">
+              <ul class="pagination justify-content-center">
+                <% if (adminData.currentProductPage > 1) { %>
+                  <li class="page-item">
+                    <a class="page-link" href="/admin/dashboard?tab=products&productPage=<%= adminData.currentProductPage - 1 %>&productSearch=<%= encodeURIComponent(adminData.productSearch || '') %>">Previous</a>
+                  </li>
+                <% } %>
+                <% for (let i = 1; i <= adminData.totalProductPages; i++) { %>
+                  <li class="page-item <%= adminData.currentProductPage === i ? 'active' : '' %>">
+                    <a class="page-link" href="/admin/dashboard?tab=products&productPage=<%= i %>&productSearch=<%= encodeURIComponent(adminData.productSearch || '') %>"><%= i %></a>
+                  </li>
+                <% } %>
+                <% if (adminData.currentProductPage < adminData.totalProductPages) { %>
+                  <li class="page-item">
+                    <a class="page-link" href="/admin/dashboard?tab=products&productPage=<%= adminData.currentProductPage + 1 %>&productSearch=<%= encodeURIComponent(adminData.productSearch || '') %>">Next</a>
+                  </li>
+                <% } %>
+              </ul>
+            </nav>
+          <% } else { %>
+            <p>No products found</p>
+          <% } %>
+        </div>
+      </div>
+
+      <form action="/admin/logout" method="POST" class="text-center mt-4">
+        <button type="submit" class="btn btn-outline-danger">Logout</button>
+      </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // Persist active tab on page load
+      document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab') || 'users';
+        const tabLink = document.querySelector(`a[href="#${tab}"]`);
+        if (tabLink) {
+          tabLink.click();
+        }
+      });
+    </script>
+  </body>
+  </html>

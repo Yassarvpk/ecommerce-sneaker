@@ -1,43 +1,60 @@
-<%- include("../partials/adminHeader") %>
-
-<div class="container mt-5">
-  <h2 class="mb-4 text-center">Edit Product</h2>
-
-  <form method="POST" action="/admin/products/edit/<%= product._id %>">
-    <div class="mb-3">
-      <label>Name:</label>
-      <input type="text" name="name" value="<%= product.name %>" class="form-control" required />
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Product - SneakerSpace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container mt-5">
+      <h2>Edit Product</h2>
+      <% if (message) { %>
+        <div class="alert <%= message.includes('Error') ? 'alert-danger' : 'alert-success' %>" role="alert">
+          <%= message %>
+        </div>
+      <% } %>
+      <form action="/admin/dashboard/edit-product/<%= product._id %>" method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label for="name" class="form-label">Product Name</label>
+          <input type="text" class="form-control" id="name" name="name" value="<%= product.name %>" required>
+        </div>
+        <div class="mb-3">
+          <label for="category" class="form-label">Category</label>
+          <select class="form-select" id="category" name="category" required>
+            <option value="">Select Category</option>
+            <% categories.forEach(category => { %>
+              <option value="<%= category._id %>" <%= product.category._id.toString() === category._id.toString() ? 'selected' : '' %>>
+                <%= category.name %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="price" class="form-label">Price</label>
+          <input type="number" class="form-control" id="price" name="price" step="0.01" value="<%= product.price %>" required>
+        </div>
+        <div class="mb-3">
+          <label for="stock" class="form-label">Stock</label>
+          <input type="number" class="form-control" id="stock" name="stock" value="<%= product.stock %>" required>
+        </div>
+        <div class="mb-3">
+          <label for="description" class="form-label">Description</label>
+          <textarea class="form-control" id="description" name="description" rows="4"><%= product.description || '' %></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="images" class="form-label">Images (minimum 3, leave blank to keep existing)</label>
+          <input type="file" class="form-control" id="images" name="images" accept="image/*" multiple>
+          <div class="mt-2">
+            <p>Current Images:</p>
+            <% product.images.forEach(image => { %>
+              <img src="<%= image %>" alt="Product Image" style="width: 100px; height: 100px; object-fit: cover; margin-right: 10px;">
+            <% }) %>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Product</button>
+        <a href="/admin/dashboard" class="btn btn-secondary">Cancel</a>
+      </form>
     </div>
-
-    <div class="mb-3">
-      <label>Price:</label>
-      <input type="number" name="price" value="<%= product.price %>" class="form-control" required />
-    </div>
-
-    <div class="mb-3">
-      <label>Stock:</label>
-      <input type="number" name="stock" value="<%= product.stock %>" class="form-control" required />
-    </div>
-
-    <div class="mb-3">
-      <label>Description:</label>
-      <textarea name="description" class="form-control" rows="4"><%= product.description %></textarea>
-    </div>
-
-    <div class="mb-3">
-      <label>Category:</label>
-      <select name="category" class="form-control">
-        <% categories.forEach(cat => { %>
-          <option value="<%= cat._id %>" <%= cat._id.equals(product.category._id) ? "selected" : "" %>>
-            <%= cat.name %>
-          </option>
-        <% }) %>
-      </select>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Update</button>
-    <a href="/admin/products" class="btn btn-secondary">Cancel</a>
-  </form>
-</div>
-
-<%- include("../partials/adminFooter") %>
+  </body>
+  </html>
